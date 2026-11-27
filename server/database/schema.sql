@@ -14,7 +14,7 @@ CREATE TABLE users (
   role VARCHAR(20) NOT NULL CHECK (role IN ('admin', 'manager', 'staff')),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE (company_id, email)
+  UNIQUE (email)
 );
 
 CREATE TABLE categories (
