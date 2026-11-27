@@ -34,6 +34,20 @@ router.post("/register", async (req, res) => {
     client = await pool.connect();
     await client.query("BEGIN");
 
+const existingUser = await client.query(
+  "SELECT id FROM users WHERE email = $1",
+  [email.trim().toLowerCase()]
+);
+
+if (existingUser.rows.length > 0) {
+  await client.query("ROLLBACK");
+
+  return res.status(409).json({
+    status: "error",
+    message: "An account with this email already exists",
+  });
+}
+
     const companyResult = await client.query(
       "INSERT INTO companies (name) VALUES ($1) RETURNING id",
       [companyName.trim()]
