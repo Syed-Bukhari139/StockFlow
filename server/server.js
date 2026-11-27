@@ -7,6 +7,8 @@ app.use(express.json());
 
 const cors = require("cors");
 app.use(cors());
+
+app.use("/api/auth", require("./routes/auth"));
 const PORT = process.env.PORT || 5000;
 
 app.get("/", (req, res) => {
