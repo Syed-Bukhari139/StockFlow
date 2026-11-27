@@ -34,19 +34,19 @@ router.post("/register", async (req, res) => {
     client = await pool.connect();
     await client.query("BEGIN");
 
-const existingUser = await client.query(
-  "SELECT id FROM users WHERE email = $1",
-  [email.trim().toLowerCase()]
-);
+    const existingUser = await client.query(
+      "SELECT id FROM users WHERE email = $1",
+      [email.trim().toLowerCase()]
+    );
 
-if (existingUser.rows.length > 0) {
-  await client.query("ROLLBACK");
+    if (existingUser.rows.length > 0) {
+      await client.query("ROLLBACK");
 
-  return res.status(409).json({
-    status: "error",
-    message: "An account with this email already exists",
-  });
-}
+      return res.status(409).json({
+        status: "error",
+        message: "An account with this email already exists",
+      });
+    }
 
     const companyResult = await client.query(
       "INSERT INTO companies (name) VALUES ($1) RETURNING id",
@@ -101,6 +101,84 @@ if (existingUser.rows.length > 0) {
     });
   } finally {
     if (client) client.release();
+  }
+});
+
+router.post("/login", async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({
+      status: "error",
+      message: "Email and password are required",
+    });
+  }
+
+  if (!process.env.JWT_SECRET) {
+    return res.status(500).json({
+      status: "error",
+      message: "Server authentication is not configured",
+    });
+  }
+
+  try {
+    const result = await pool.query(
+      `SELECT id, company_id, name, email, password_hash, role
+       FROM users
+       WHERE email = $1`,
+      [email.trim().toLowerCase()]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(401).json({
+        status: "error",
+        message: "Invalid email or password",
+      });
+    }
+
+    const user = result.rows[0];
+
+    const isPasswordValid = await bcrypt.compare(
+      password,
+      user.password_hash
+    );
+
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        status: "error",
+        message: "Invalid email or password",
+      });
+    }
+
+    const token = jwt.sign(
+      {
+        id: user.id,
+        companyId: user.company_id,
+        role: user.role,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
+
+    res.status(200).json({
+      status: "success",
+      message: "Login successful",
+      token,
+      user: {
+        id: user.id,
+        company_id: user.company_id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    console.error("Login error:", error);
+
+    res.status(500).json({
+      status: "error",
+      message: "Login failed",
+    });
   }
 });
 
