@@ -11,6 +11,9 @@ const cors = require("cors");
 app.use(cors());
 
 app.use("/api/auth", require("./routes/auth"));
+
+// Register protected product management routes
+app.use("/api/products", require("./routes/products"));
 const PORT = process.env.PORT || 5000;
 
 app.get("/", (req, res) => {
