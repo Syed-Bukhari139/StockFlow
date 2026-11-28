@@ -3,6 +3,7 @@ const app = express();
 require("dotenv").config();
 const pool = require("./config/db");
 const authMiddleware = require("./middleware/authMiddleware");
+const authorizeRoles = require("./middleware/authorizeRoles");
 
 app.use(express.json());
 
@@ -30,6 +31,42 @@ app.get("/api/protected", authMiddleware, (req, res) => {
     user: req.user,
   });
 });
+
+app.get(
+  "/api/admin-only",
+  authMiddleware,
+  authorizeRoles("admin"),
+  (req, res) => {
+    res.status(200).json({
+      status: "success",
+      message: "Welcome Admin. You have access to this route.",
+    });
+  }
+);
+
+app.get(
+  "/api/manager-only",
+  authMiddleware,
+  authorizeRoles("manager"),
+  (req, res) => {
+    res.status(200).json({
+      status: "success",
+      message: "Welcome Manager. You have access to this route.",
+    });
+  }
+);
+
+app.get(
+  "/api/staff-only",
+  authMiddleware,
+  authorizeRoles("staff"),
+  (req, res) => {
+    res.status(200).json({
+      status: "success",
+      message: "Welcome Staff. You have access to this route.",
+    });
+  }
+);
 
 app.get("/api/db-test", async (req, res) => {
   try {
